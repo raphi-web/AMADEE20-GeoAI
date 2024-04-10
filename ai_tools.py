@@ -254,7 +254,7 @@ def train_folders(input_dir, target_dir):
     return input_img_paths, target_img_paths
 
 
-def split_train_val(input_dir, target_dir, num_val_samples, batch_size, img_size, nbands, nclasses=2, augment=False, sparse=False):
+def split_train_val(input_dir, target_dir, num_val_samples, batch_size, img_size, nbands, nclasses=2, augment=[False, False], sparse=False):
     # Split our img paths into a training and a validation set
 
     input_img_paths, target_img_paths = train_folders(input_dir, target_dir)
@@ -270,10 +270,10 @@ def split_train_val(input_dir, target_dir, num_val_samples, batch_size, img_size
 
     # Instantiate data Sequences for each split
     train_gen = DataLoader(
-        batch_size, img_size, nbands, train_input_img_paths, train_target_img_paths, nclasses=nclasses, augment=augment, sparse=sparse
+        batch_size, img_size, nbands, train_input_img_paths, train_target_img_paths, nclasses=nclasses, augment=augment[0], sparse=sparse
     )
     val_gen = DataLoader(batch_size, img_size, nbands,
-                         val_input_img_paths, val_target_img_paths, nclasses=nclasses, augment=augment, sparse=sparse)
+                         val_input_img_paths, val_target_img_paths, nclasses=nclasses, augment=augment[1], sparse=sparse)
 
     return train_gen, val_gen
 
