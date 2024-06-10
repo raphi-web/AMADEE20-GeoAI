@@ -35,6 +35,13 @@ import os
 import random
 import numpy as np
 import re
+
+from sklearn.metrics import accuracy_score, jaccard_score, f1_score
+from sklearn.metrics import confusion_matrix,recall_score,precision_score
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+
 """
 from tensorflow.keras.layers.pooling import MaxPooling2D
 from tensorflow.keras.layers.merge import concatenate
@@ -295,3 +302,77 @@ def predict(model):
         return y
 
     return predictionFunc
+
+
+
+def validate_model(model,val_generator):
+  val_data = [i for i in val_generator]
+  val_imgs = [i for (i,_) in val_data]
+  val_mask = [i for (_,i) in val_data]
+
+
+  val_pred = [model(x) for x in val_imgs]
+  val_mask = np.concatenate(val_mask,axis=0)
+
+  #y_pred_model_output = model.predict(val_imgs)
+  y_pred_model_output = np.concatenate(val_pred, axis=0)
+  y_pred = np.argmax(y_pred_model_output,axis=-1)
+  y_true = np.argmax(val_mask,axis=-1)
+  y_pred_cat = keras.utils.to_categorical(y_pred,7)
+  y_true_cat = keras.utils.to_categorical(y_true,7)
+
+  acc = keras.metrics.CategoricalAccuracy()
+  acc.update_state(y_true_cat, y_pred_cat)
+  print("Accuracy Keras:", float(acc.result()))
+
+  y_true_flat = y_true.ravel()
+  y_pred_flat = y_pred.ravel()
+
+  print("Accuracy:",accuracy_score(y_true_flat, y_pred_flat))
+  print("IoU:", jaccard_score(y_true_flat, y_pred_flat,average="micro"))
+  print("F1:", f1_score(y_true_flat, y_pred_flat,average="micro"))
+  print("Precision:", precision_score(y_true_flat, y_pred_flat,average="micro"))
+  print("Recall:" ,recall_score(y_true_flat, y_pred_flat,average="micro"))
+  print("\n\n")
+
+  num_classes = np.max(y_true) + 1
+  class_accuracy = np.zeros(num_classes)
+  class_precision = np.zeros(num_classes)
+  class_recall = np.zeros(num_classes)
+  class_f1 = np.zeros(num_classes)
+  class_iou = np.zeros(num_classes)
+
+  # Compute for each class
+  for class_label in range(num_classes):
+      class_y_true = (y_true_flat == class_label)
+      class_y_pred = (y_pred_flat == class_label)
+
+
+      class_accuracy[class_label] = accuracy_score(class_y_true, class_y_pred)
+      class_precision[class_label] = precision_score(class_y_true, class_y_pred)
+      class_recall[class_label] = recall_score(class_y_true, class_y_pred)
+      class_f1[class_label] = f1_score(class_y_true, class_y_pred)
+      class_iou[class_label] = jaccard_score(class_y_true, class_y_pred)
+
+  print("Accuracy for each class:", class_accuracy)
+  print("Precision for each class:", class_precision)
+  print("Recall for each class:", class_recall)
+  print("F1 for each class:", class_f1)
+  print("IoU for each class:", class_iou)
+
+  print("Accuracy:",np.mean( class_accuracy))
+  print("Precision:", np.mean(class_precision))
+  print("Recall:", np.mean(class_recall))
+  print("F1:", np.mean(class_f1))
+  print("IoU:", np.mean(class_iou))
+
+  conf_matrix = confusion_matrix(y_true_flat,y_pred_flat)
+  plt.figure(figsize=(10, 8))
+  sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="Blues", cbar=False)
+  plt.xlabel("Predicted Labels")
+  plt.ylabel("True Labels")
+  plt.title("Confusion Matrix")
+  plt.show()
+
+
+
